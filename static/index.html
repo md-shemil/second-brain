@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Second Brain</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f4;
+    --surface: #ffffff;
+    --border: #e5e5e3;
+    --text: #1a1a1a;
+    --text2: #666;
+    --accent: #1a1a1a;
+    --accent-fg: #fff;
+    --muted: #999;
+    --red: #dc2626;
+    --green: #16a34a;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --radius: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111110;
+      --surface: #1c1c1a;
+      --border: #2a2a28;
+      --text: #e8e8e4;
+      --text2: #888;
+      --accent: #e8e8e4;
+      --accent-fg: #111110;
+      --muted: #555;
+      --red: #f87171;
+      --green: #4ade80;
+    }
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; }
+
+  /* ── Layout ── */
+  .app { max-width: 720px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; padding: 0 16px; }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+  .logo em { color: var(--muted); font-style: normal; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--green); }
+  .doc-count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* ── Upload strip ── */
+  .upload-strip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .upload-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); color: var(--text); font-size: 12px;
+    cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    font-family: var(--sans); position: relative; overflow: hidden;
+  }
+  .upload-btn:hover { background: var(--border); }
+  .upload-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .index-btn {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); color: var(--text); font-size: 12px;
+    cursor: pointer; transition: background 0.15s; font-family: var(--sans);
+  }
+  .index-btn:hover { background: var(--border); }
+  .index-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono); font-size: 10px; padding: 3px 6px 3px 10px;
+    border-radius: 20px; border: 1px solid var(--border); color: var(--muted);
+    white-space: nowrap; max-width: 200px;
+  }
+  .pill span { overflow: hidden; text-overflow: ellipsis; }
+  .pill-rm {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 11px; line-height: 1; padding: 0 2px; flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .pill-rm:hover { color: var(--red); }
+  .clear-btn {
+    padding: 4px 10px; border: 1px solid var(--border); border-radius: 20px;
+    background: transparent; color: var(--muted); font-size: 11px; flex-shrink: 0;
+    cursor: pointer; white-space: nowrap; transition: color 0.15s, border-color 0.15s;
+    font-family: var(--sans);
+  }
+  .clear-btn:hover { color: var(--red); border-color: var(--red); }
+  .pills-row { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; overflow: hidden; align-items: center; }
+
+  /* ── Chat ── */
+  .chat { flex: 1; overflow-y: auto; padding: 20px 0; display: flex; flex-direction: column; gap: 20px; }
+  .chat::-webkit-scrollbar { width: 3px; }
+  .chat::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* welcome */
+  .welcome { text-align: center; margin: auto; padding: 40px 0; color: var(--muted); }
+  .welcome h2 { font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+  .welcome p { font-size: 13px; line-height: 1.7; }
+  .hints { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
+  .hint-btn {
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px;
+    font-size: 12px; color: var(--text2); cursor: pointer; background: transparent;
+    transition: border-color 0.15s, color 0.15s; font-family: var(--sans);
+  }
+  .hint-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* messages */
+  .msg { display: flex; flex-direction: column; gap: 4px; }
+  .msg.user { align-items: flex-end; }
+  .msg.bot  { align-items: flex-start; }
+  .msg-label { font-size: 11px; color: var(--muted); padding: 0 4px; }
+
+  .bubble {
+    max-width: 88%; padding: 11px 15px; border-radius: var(--radius);
+    line-height: 1.65; font-size: 14px;
+  }
+  .msg.user .bubble { background: var(--accent); color: var(--accent-fg); border-bottom-right-radius: 3px; }
+  .msg.bot  .bubble { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 3px; }
+
+  /* sources row */
+  .sources-row { display: flex; align-items: center; gap: 6px; padding: 0 2px; flex-wrap: wrap; }
+  .src-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface);
+    font-family: var(--mono); font-size: 10px; color: var(--text2);
+    cursor: pointer; transition: border-color 0.15s, color 0.15s; user-select: none;
+  }
+  .src-badge:hover { border-color: var(--text); color: var(--text); }
+  .src-badge .num { color: var(--muted); }
+
+  /* source drawer */
+  .src-drawer {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    font-size: 12px; color: var(--text2); line-height: 1.7;
+    max-width: 88%; display: none;
+  }
+  .src-drawer.open { display: block; }
+  .src-drawer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .src-drawer-file { font-family: var(--mono); font-size: 11px; color: var(--text); }
+  .src-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+  .src-close:hover { color: var(--text); }
+  .src-excerpt { color: var(--text2); }
+
+  /* thinking */
+  .thinking { display: flex; align-items: center; gap: 8px; padding: 11px 15px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); border-bottom-left-radius: 3px; }
+  .dots span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; margin-right: 3px; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+  .thinking-txt { font-size: 12px; color: var(--muted); }
+
+  .err-bubble { padding: 10px 14px; border-radius: var(--radius); background: transparent; border: 1px solid var(--red); color: var(--red); font-size: 13px; max-width: 88%; }
+
+  /* ── Input ── */
+  .input-bar {
+    display: flex; gap: 8px; align-items: flex-end;
+    padding: 12px 0 20px; border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  textarea {
+    flex: 1; resize: none; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 14px; color: var(--text); font-family: var(--sans); font-size: 14px;
+    outline: none; line-height: 1.5; max-height: 120px; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--text); }
+  textarea::placeholder { color: var(--muted); }
+  .send {
+    padding: 10px 18px; background: var(--accent); color: var(--accent-fg);
+    border: none; border-radius: var(--radius); font-size: 13px; font-family: var(--mono);
+    cursor: pointer; transition: opacity 0.15s; flex-shrink: 0;
+  }
+  .send:hover { opacity: 0.75; }
+  .send:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    padding: 8px 18px; border-radius: 20px; font-size: 12px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text2);
+    animation: fadeup 0.25s ease; z-index: 99; white-space: nowrap;
+  }
+  @keyframes fadeup { from{opacity:0;transform:translateX(-50%) translateY(6px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo"> second<em>brain</em></div>
+    <div class="header-right">
+      <div class="status"><div class="dot" id="dot"></div><span id="statusTxt">connecting</span></div>
+    </div>
+  </header>
+
+  <div class="upload-strip">
+    <label class="upload-btn">
+      <input type="file" id="fileInput" accept=".pdf,.txt,.md" multiple/>
+      ↑ Upload
+    </label>
+    <button class="index-btn" id="indexBtn" onclick="indexDocs()"> Index folder</button>
+    <div class="pills-row" id="pillsRow"></div>
+    <button class="clear-btn" id="clearBtn" onclick="clearAll()" style="display:none">Clear all</button>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="welcome" id="welcome">
+      <h2>Ask your notes anything.</h2>
+      <p>Upload files or drop them in <code>docs/</code>, then index.<br/>Every answer is grounded in your documents.</p>
+      <div class="hints">
+        <button class="hint-btn" onclick="hint(this)">What is the main methodology?</button>
+        <button class="hint-btn" onclick="hint(this)">Summarize this document</button>
+        <button class="hint-btn" onclick="hint(this)">What are the key findings?</button>
+        <button class="hint-btn" onclick="hint(this)">List all algorithms mentioned</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <textarea id="q" rows="1" placeholder="Ask anything from your docs…" onkeydown="onKey(event)" oninput="resize(this)"></textarea>
+    <button class="send" id="sendBtn" onclick="ask()">Ask</button>
+  </div>
+
+</div>
+<script>
+  let busy = false;
+  let openDrawer = null;
+
+  async function init() {
+    try {
+      const d = await (await fetch('/api/status')).json();
+      setStatus(true, d.list.length);
+      renderPills(d.list);
+    } catch { setStatus(false, 0); }
+  }
+
+  function setStatus(on, count) {
+    document.getElementById('dot').className = 'dot' + (on ? ' on' : '');
+    document.getElementById('statusTxt').textContent = on
+      ? (count > 0 ? `${count} doc${count>1?'s':''}` : 'no docs')
+      : 'offline';
+  }
+
+  function renderPills(docs) {
+    const row = document.getElementById('pillsRow');
+    row.innerHTML = '';
+    const clearBtn = document.getElementById('clearBtn');
+    clearBtn.style.display = (docs && docs.length > 0) ? '' : 'none';
+
+    (docs || []).forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'pill';
+      el.title = d.name;
+      el.innerHTML = `<span>${esc(d.name)}</span><button class="pill-rm" title="Remove from index" onclick="removeDoc(event,'${esc(d.name)}')">✕</button>`;
+      row.appendChild(el);
+    });
+  }
+
+  async function removeDoc(e, filename) {
+    e.stopPropagation();
+    if (!confirm(`Remove "${filename}" from index?`)) return;
+    try {
+      const d = await (await fetch('/api/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename })
+      })).json();
+      if (d.error) { toast('⚠ ' + d.error); return; }
+      renderPills(d.docs);
+      setStatus(true, d.docs.length);
+      toast(`✓ Removed ${filename}`);
+    } catch { toast('Remove failed'); }
+  }
+
+  async function clearAll() {
+    if (!confirm('Clear ALL indexed documents?')) return;
+    try {
+      const d = await (await fetch('/api/clear', { method: 'POST' })).json();
+      if (d.error) { toast('⚠ ' + d.error); return; }
+      renderPills([]);
+      setStatus(true, 0);
+      toast('✓ Cleared all');
+    } catch { toast('Clear failed'); }
+  }
+
+  // upload
+  document.getElementById('fileInput').addEventListener('change', function() {
+    uploadFiles(this.files);
+  });
+
+  async function uploadFiles(files) {
+    for (const f of files) {
+      const fd = new FormData(); fd.append('file', f);
+      toast(`Uploading ${f.name}…`);
+      try {
+        const d = await (await fetch('/api/upload', { method: 'POST', body: fd })).json();
+        if (d.error) { toast('⚠ ' + d.error); continue; }
+        renderPills(d.docs);
+        setStatus(true, d.docs.length);
+        toast('✓ ' + f.name);
+      } catch { toast('Upload failed'); }
+    }
+  }
+
+  async function indexDocs() {
+    const btn = document.getElementById('indexBtn');
+    btn.disabled = true; btn.textContent = 'Indexing…';
+    try {
+      const d = await (await fetch('/api/index', { method: 'POST' })).json();
+      if (d.error) { toast('⚠ ' + d.error); return; }
+      renderPills(d.docs); setStatus(true, d.docs.length);
+      toast(`✓ ${d.indexed} doc(s) indexed`);
+    } catch { toast('Index failed'); }
+    finally { btn.disabled = false; btn.textContent = '⚡ Index folder'; }
+  }
+
+  // chat
+  function rmWelcome() { const w = document.getElementById('welcome'); if (w) w.remove(); }
+
+  function addUser(text) {
+    rmWelcome();
+    const chat = document.getElementById('chat');
+    const el = document.createElement('div');
+    el.className = 'msg user';
+    el.innerHTML = `<div class="bubble">${esc(text)}</div>`;
+    chat.appendChild(el);
+    scrollBot();
+  }
+
+  function addThinking() {
+    rmWelcome();
+    const chat = document.getElementById('chat');
+    const el = document.createElement('div');
+    el.className = 'msg bot'; el.id = 'thinking';
+    el.innerHTML = `<div class="thinking"><div class="dots"><span></span><span></span><span></span></div><div class="thinking-txt">Searching docs…</div></div>`;
+    chat.appendChild(el);
+    scrollBot();
+  }
+
+  function rmThinking() { const e = document.getElementById('thinking'); if (e) e.remove(); }
+
+  function addBot(answer, sources) {
+    const chat = document.getElementById('chat');
+    const wrap = document.createElement('div');
+    wrap.className = 'msg bot';
+
+    // bubble
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = esc(answer).replace(/\n/g, '<br>');
+    wrap.appendChild(bubble);
+
+    // source badges
+    if (sources && sources.length > 0) {
+      const row = document.createElement('div');
+      row.className = 'sources-row';
+
+      sources.forEach((s, i) => {
+        const badge = document.createElement('div');
+        badge.className = 'src-badge';
+        badge.innerHTML = `<span class="num">${i+1}</span> 📄 ${esc(s.file)}`;
+
+        // drawer
+        const drawer = document.createElement('div');
+        drawer.className = 'src-drawer';
+        drawer.innerHTML = `
+          <div class="src-drawer-header">
+            <div class="src-drawer-file">📄 ${esc(s.file)}</div>
+            <button class="src-close" onclick="closeDrawer(event, this)">✕</button>
+          </div>
+          <div class="src-excerpt">${esc(s.excerpt)}</div>`;
+
+        badge.addEventListener('click', () => {
+          const isOpen = drawer.classList.contains('open');
+          // close any open drawer
+          if (openDrawer && openDrawer !== drawer) {
+            openDrawer.classList.remove('open');
+          }
+          drawer.classList.toggle('open', !isOpen);
+          openDrawer = !isOpen ? drawer : null;
+          scrollBot();
+        });
+
+        row.appendChild(badge);
+        wrap.appendChild(row);
+        wrap.appendChild(drawer);
+      });
+    }
+
+    chat.appendChild(wrap);
+    scrollBot();
+  }
+
+  function closeDrawer(e, btn) {
+    e.stopPropagation();
+    const drawer = btn.closest('.src-drawer');
+    drawer.classList.remove('open');
+    if (openDrawer === drawer) openDrawer = null;
+  }
+
+  function addErr(msg) {
+    const chat = document.getElementById('chat');
+    const el = document.createElement('div');
+    el.className = 'msg bot';
+    el.innerHTML = `<div class="err-bubble">⚠ ${esc(msg)}</div>`;
+    chat.appendChild(el);
+    scrollBot();
+  }
+
+  async function ask() {
+    const input = document.getElementById('q');
+    const q = input.value.trim();
+    if (!q || busy) return;
+    busy = true;
+    input.value = ''; resize(input);
+    document.getElementById('sendBtn').disabled = true;
+    addUser(q);
+    addThinking();
+
+    try {
+      const d = await (await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      })).json();
+      rmThinking();
+      if (d.error) addErr(d.error);
+      else addBot(d.answer, d.sources);
+    } catch {
+      rmThinking(); addErr('Request failed. Is the server running?');
+    } finally {
+      busy = false;
+      document.getElementById('sendBtn').disabled = false;
+      input.focus();
+    }
+  }
+
+  function hint(btn) {
+    document.getElementById('q').value = btn.textContent;
+    ask();
+  }
+
+  function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }
+  function resize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+  function scrollBot() { const c = document.getElementById('chat'); c.scrollTop = c.scrollHeight; }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  let tt;
+  function toast(msg) {
+    const e = document.querySelector('.toast'); if (e) e.remove();
+    clearTimeout(tt);
+    const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+    document.body.appendChild(el);
+    tt = setTimeout(() => el.remove(), 2500);
+  }
+
+  init();
+</script>
+</body>
+</html>
