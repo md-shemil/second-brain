@@ -1,3 +1,5 @@
 /resume
 /__pycache__ 
 /docs/*
+/second-brain-env/
+/brain/storage/

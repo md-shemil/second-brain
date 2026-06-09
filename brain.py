@@ -115,6 +115,7 @@ class SecondBrain:
             ext = Path(fname).suffix.lstrip(".").upper() or "TXT"
             if fname not in existing:
                 self._meta["docs"].append({"name": fname, "type": ext})
+                existing.add(fname)  # prevent duplicates from multi-page docs
         self._save_meta()
         return len(docs)
 

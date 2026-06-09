@@ -99,8 +99,8 @@ sed -i.bak "s/LLM_MODEL = .*/LLM_MODEL = \"$LLM_MODEL\"/" brain.py && rm -f brai
 
 # ── Virtual environment ───────────────────────────────────────────────────────
 echo -e "${CYAN}▶ Creating virtual environment...${RESET}"
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv second-brain-env
+source second-brain-env/bin/activate
 
 echo -e "${CYAN}▶ Installing Python dependencies...${RESET}"
 pip install --quiet --upgrade pip
@@ -115,9 +115,19 @@ echo -e "${GREEN}${BOLD}━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}${BOLD}  ✓ Setup complete! Second Brain is ready.${RESET}"
 echo -e "${GREEN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo ""
-echo -e "  ${BOLD}Next steps:${RESET}"
-echo -e "  1. Drop PDFs/TXTs into the ${CYAN}docs/${RESET} folder"
-echo -e "  2. Run: ${CYAN}${BOLD}bash run.sh${RESET}"
-echo -e "  3. Click \"Index folder\" in the browser to index your docs"
-echo -e "  4. Ask anything!"
+echo -e "  ${BOLD}Optional — create a desktop shortcut (double-click to open):${RESET}"
+echo -e "  ${CYAN}bash install-launcher.sh${RESET}"
 echo ""
+
+# Ask if the user wants to launch now
+read -rp "  Launch Second Brain now? [Y/n]: " DO_LAUNCH
+DO_LAUNCH="${DO_LAUNCH:-Y}"
+
+if [[ "$DO_LAUNCH" =~ ^[Yy]$ ]]; then
+  echo ""
+  bash "$(dirname "$0")/run.sh"
+else
+  echo ""
+  echo -e "  Start anytime with:  ${CYAN}${BOLD}bash run.sh${RESET}"
+  echo ""
+fi
