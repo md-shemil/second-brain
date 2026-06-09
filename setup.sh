@@ -32,7 +32,18 @@ echo -e "${CYAN}▶ Detected platform: ${BOLD}$PLATFORM${RESET}"
 # ── Python check ──────────────────────────────────────────────────────────────
 echo -e "${CYAN}▶ Checking Python...${RESET}"
 if ! command -v python3 &>/dev/null; then
-  echo -e "${RED}Python3 not found. Install from https://python.org${RESET}"; exit 1
+  echo -e "${RED}  ✗ Python 3 not found on this system.${RESET}"
+  echo ""
+  if [ "$PLATFORM" = "mac" ]; then
+    echo -e "  Install via Homebrew:  ${BOLD}brew install python3${RESET}"
+    echo -e "  Or download from:      ${BOLD}https://python.org/downloads${RESET}"
+    echo -e "  After installing, restart your terminal and re-run: ${BOLD}bash setup.sh${RESET}"
+  else
+    echo -e "  Install with:   ${BOLD}sudo apt install python3 python3-venv python3-pip${RESET}  (Ubuntu/Debian)"
+    echo -e "  Or download:    ${BOLD}https://python.org/downloads${RESET}"
+  fi
+  echo ""
+  exit 1
 fi
 PYVER=$(python3 --version 2>&1)
 echo -e "${GREEN}  ✓ $PYVER${RESET}"

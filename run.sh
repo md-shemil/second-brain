@@ -17,7 +17,22 @@ echo ""
 echo -e "${CYAN}${BOLD}  second brain${RESET}${CYAN} — starting up...${RESET}"
 echo ""
 
-# ── 1. Check setup ────────────────────────────────────────────────────────────
+# ── 1. Check Python 3 ────────────────────────────────────────────────────────
+if ! command -v python3 &>/dev/null; then
+  echo -e "${RED}  ✗ Python 3 not found on this system.${RESET}"
+  echo ""
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo -e "  Install Python 3 via Homebrew:  ${BOLD}brew install python3${RESET}"
+    echo -e "  Or download from:               ${BOLD}https://python.org/downloads${RESET}"
+  else
+    echo -e "  Install Python 3 with:  ${BOLD}sudo apt install python3${RESET}  (Ubuntu/Debian)"
+    echo -e "  Or download from:       ${BOLD}https://python.org/downloads${RESET}"
+  fi
+  echo ""
+  exit 1
+fi
+
+# ── 2. Check setup ────────────────────────────────────────────────────────────
 if [ ! -d "second-brain-env" ]; then
   echo -e "${RED}  ✗ Not set up yet.${RESET}"
   echo -e "  Run this first:  ${BOLD}bash setup.sh${RESET}"
@@ -25,7 +40,16 @@ if [ ! -d "second-brain-env" ]; then
   exit 1
 fi
 
-# ── 2. Start Ollama if not already running ────────────────────────────────────
+# Verify venv Python is healthy (handles broken envs after Python upgrade)
+if ! second-brain-env/bin/python3 -c "import sys" &>/dev/null; then
+  echo -e "${YELLOW}  ⚠ Virtual environment is broken (Python may have been updated).${RESET}"
+  echo -e "  Re-running setup to fix it..."
+  echo ""
+  bash "$(dirname "$0")/setup.sh"
+  exit 0
+fi
+
+# ── 3. Start Ollama if not already running ────────────────────────────────────
 if curl -s http://localhost:11434 &>/dev/null; then
   echo -e "${GREEN}  ✓ Ollama is running${RESET}"
 else
@@ -44,7 +68,7 @@ else
   fi
 fi
 
-# ── 3. Activate venv & launch ─────────────────────────────────────────────────
+# ── 4. Activate venv & launch ─────────────────────────────────────────────────
 source second-brain-env/bin/activate
 
 echo -e "${GREEN}  ✓ Opening browser at ${BOLD}http://localhost:5050${RESET}"
